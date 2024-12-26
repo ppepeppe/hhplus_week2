@@ -79,5 +79,53 @@ public class LectureConcurrencyTest {
         assertEquals(30, successfulRegistrations.get()); // 성공한 신청
         assertEquals(10, failedRegistrations.get()); // 실패한 신청
     }
+    @Test
+    @DisplayName("동일한 사용자가 같은 특강을 5번 신청할 때 1번만 성공")
+    void shouldAllowSingleRegistrationForSameLecture() throws InterruptedException {
+       // given
+       LocalDate dateTime = LocalDate.of(2025, 1, 1);
+
+       // 강의 생성
+       Lecture lecture = new Lecture();
+       lecture.setTitle("math");
+       lecture.setLecturer("kim");
+       lecture.setCurrentCount(0);
+       lecture.setMaxCapacity(30);
+       lecture.setDate(dateTime);
+       lectureRepository.save(lecture);
+
+       int numberOfRequests = 5;
+       ExecutorService executorService = Executors.newFixedThreadPool(numberOfRequests);
+       CountDownLatch latch = new CountDownLatch(numberOfRequests);
+
+       AtomicInteger successfulRegistrations = new AtomicInteger(0);
+       AtomicInteger failedRegistrations = new AtomicInteger(0);
+
+       long userId = 1L;
+
+       for (int i = 0; i < numberOfRequests; i++) {
+           executorService.submit(() -> {
+               try {
+                   lectureService.applyLecture(lecture.getLectureId(), userId);
+                   successfulRegistrations.incrementAndGet();
+                   System.out.println("Registration successful");
+               } catch (Exception e) {
+                   failedRegistrations.incrementAndGet();
+                   System.out.println("Registration failed: " + e.getMessage());
+               } finally {
+                   latch.countDown();
+               }
+           });
+       }
+
+       latch.await();
+       executorService.shutdown();
+
+       // then
+       Lecture updatedLecture = lectureRepository.findById(lecture.getLectureId()).orElseThrow();
+       assertEquals(1, updatedLecture.getCurrentCount()); // 중복되지 않고 1명만 등록
+       assertEquals(1, successfulRegistrations.get()); // 성공한 신청은 1번
+       assertEquals(4, failedRegistrations.get()); // 실패한 신청은 4번
+    }
 
 }
