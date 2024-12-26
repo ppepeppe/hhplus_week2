@@ -11,5 +11,6 @@ import java.util.List;
 public interface LectureService {
     List<Lecture> getAvailableLectures(LocalDate date);
     LectureApplication applyLecture(long lectureId, long userId);
+    List<Lecture> getAppliedLectures(long userId);
 
 }

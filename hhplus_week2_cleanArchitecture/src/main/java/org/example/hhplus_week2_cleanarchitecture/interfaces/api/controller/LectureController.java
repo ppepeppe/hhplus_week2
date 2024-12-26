@@ -31,5 +31,10 @@ public class LectureController {
         return ResponseEntity.ok("수강 신청 성공");
     }
 
+    // 특강 신청 완료 목록 조회 API
+    @GetMapping("/{userId}/applied")
+    public List<Lecture> getAppliedLectures(@PathVariable Long userId) {
 
+        return lectureService.getAppliedLectures(userId);
+    }
 }

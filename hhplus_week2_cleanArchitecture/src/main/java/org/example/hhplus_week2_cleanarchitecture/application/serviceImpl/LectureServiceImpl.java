@@ -59,5 +59,10 @@ public class LectureServiceImpl implements LectureService {
 
         return lectureApplicationRepository.save(lectureApplication);
     }
+    @Override
+    public List<Lecture> getAppliedLectures(long userId) {
+        List<Long> lectureIds = lectureApplicationRepository.findLectureIdsByUserId(userId);
 
+        return lectureRepository.findAllById(lectureIds);
+    }
 }
