@@ -23,4 +23,13 @@ public class LectureController {
         return lectureService.getAvailableLectures(date);
     }
 
+    // 특강 신청 API
+    @PostMapping("/apply")
+    public ResponseEntity<?> applyLecture(@RequestBody ApplyLectureRequest applyLectureRequest) {
+        lectureService.applyLecture(applyLectureRequest.getLectureId(), applyLectureRequest.getUserId());
+
+        return ResponseEntity.ok("수강 신청 성공");
+    }
+
+
 }

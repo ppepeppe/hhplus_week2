@@ -30,5 +30,34 @@ public class LectureServiceImpl implements LectureService {
                     .filter(lecture -> lecture.getCurrentCount() < 30)
                     .collect(Collectors.toList());
     }
+    @Override
+    @Transactional
+    public LectureApplication applyLecture(long lectureId, long userId) {
+        boolean alreadyRegistered = lectureApplicationRepository.existsByLectureIdAndUserId(lectureId, userId);
+        if (alreadyRegistered) {
+            throw new IllegalStateException("사용자는 이미 해당 특강을 신청했습니다.");
+        }
+        Lecture lecture = lectureRepository.findByIdWithLock(lectureId)
+                .orElseThrow(() -> new IllegalStateException("강의가 없습니다."));
+
+        // 정원이 초과되었는지 확인
+        if (lecture.getCurrentCount() >= lecture.getMaxCapacity()) {
+            throw new IllegalStateException("30명 정원이 꽉 찼습니다.");
+        }
+
+        // 참가자 수 증가
+        lecture.setCurrentCount(lecture.getCurrentCount() + 1);
+
+        // 강의 정보 저장
+        lectureRepository.save(lecture);
+
+        // 신청 기록 저장
+        LectureApplication lectureApplication = new LectureApplication();
+        lectureApplication.setLectureId(lectureId);
+        lectureApplication.setUserId(userId);
+        lectureApplication.setAppliedAt(DATE_TIME);
+
+        return lectureApplicationRepository.save(lectureApplication);
+    }
 
 }

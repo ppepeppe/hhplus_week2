@@ -77,4 +77,55 @@ public class LectureServiceTest {
         assertEquals(1, availableLectures.size()); // 신청 가능한 강의는 1개
         assertEquals("math", availableLectures.get(0).getTitle());
     }
+
+    @Test
+       @DisplayName("우저가 특강Id로 해당 특강을 신청한다")
+       void shouldCreateLectureSuccessfully() {
+           // given
+           LectureApplication lectureApplication = new LectureApplication(1L, USER_ID, LECTURE_ID, DATE_TIME);
+           Lecture lecture = new Lecture(LECTURE_ID, "math", "kim", LocalDate.of(2025, 1, 1), 0, 30);
+           when(lectureApplicationRepository.save(lectureApplication)).thenReturn(lectureApplication);
+           when(lectureRepository.findByIdWithLock(LECTURE_ID)).thenReturn(Optional.of(lecture));
+           // when
+           LectureApplication result = lectureServiceImpl.applyLecture(LECTURE_ID, USER_ID);
+
+           assertEquals(LECTURE_ID, result.getLectureId());
+           assertEquals(USER_ID, result.getUserId());
+       }
+
+       @Test
+       @DisplayName("특강ID로 해당 특강을 신청 시 currentCount 값을 +1 한다")
+       void shouldIncrementCurrentParticipantsWhenLectureIsRegistered() {
+           // given
+           Lecture lecture = new Lecture(LECTURE_ID, "math", "kim", LocalDate.of(2025, 1, 1), 0, 30);
+           LectureApplication lectureApplication = new LectureApplication(1L, USER_ID, LECTURE_ID, DATE_TIME);
+
+           // Mock 설정
+           when(lectureRepository.findByIdWithLock(LECTURE_ID)).thenReturn(Optional.of(lecture));
+           when(lectureApplicationRepository.save(any(LectureApplication.class))).thenReturn(lectureApplication);
+           when(lectureRepository.save(any(Lecture.class))).thenReturn(lecture);
+
+           // when
+           LectureApplication result = lectureServiceImpl.applyLecture(LECTURE_ID, USER_ID);
+
+           // then
+           assertEquals(1, lecture.getCurrentCount()); // currentCount가 1 증가했는지 확인
+           assertEquals(LECTURE_ID, result.getLectureId()); // 신청 기록이 저장되었는지 확인
+           verify(lectureRepository).save(lecture); // Lecture 저장 로직 호출 확인
+       }
+
+       @Test
+       @DisplayName("참가자가 30명을 초과하면 예외를 던진다")
+       void shouldThrowExceptionWhenLectureIsFull() {
+          // given
+           Lecture lecture = new Lecture(LECTURE_ID, "math", "kim", LocalDate.of(2025, 1, 1), 30, 30);
+
+           when(lectureRepository.findByIdWithLock(LECTURE_ID)).thenReturn(Optional.of(lecture));
+
+          // when & then
+          IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+                  lectureServiceImpl.applyLecture(LECTURE_ID, USER_ID));
+
+          assertEquals("30명 정원이 꽉 찼습니다.", exception.getMessage());
+       }
 }
