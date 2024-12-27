@@ -1,0 +1,24 @@
+services:
+  mariadb:
+    image: mariadb:10.6
+    container_name: week2_test_mariadb
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mariadb://localhost:3308/week2_hanghae
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: week2_hanghae
+#      MYSQL_USER: root
+#      MYSQL_PASSWORD: 1234
+    ports:
+      - "3308:3306"
+    networks:
+      - test-network
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+networks:
+  test-network: # 네트워크 정의
+    driver: bridge
